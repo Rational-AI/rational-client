@@ -1,0 +1,116 @@
+from collections.abc import Mapping
+from typing import Any, TypeVar, Union, cast
+
+from attrs import define as _attrs_define
+
+from ..models.temporal_workflow_status import TemporalWorkflowStatus
+from ..models.temporal_workflow_type import TemporalWorkflowType
+from ..types import UNSET, Unset
+
+T = TypeVar("T", bound="CreateKnowledgeSyncJobRequest")
+
+
+@_attrs_define
+class CreateKnowledgeSyncJobRequest:
+    """
+    Attributes:
+        temporal_workflow_id (str):
+        temporal_run_id (str):
+        workflow_type (TemporalWorkflowType):
+        workflow_status (Union[Unset, TemporalWorkflowStatus]):
+        last_error (Union[None, Unset, str]):
+        tries (Union[None, Unset, int]):
+    """
+
+    temporal_workflow_id: str
+    temporal_run_id: str
+    workflow_type: TemporalWorkflowType
+    workflow_status: Union[Unset, TemporalWorkflowStatus] = UNSET
+    last_error: Union[None, Unset, str] = UNSET
+    tries: Union[None, Unset, int] = UNSET
+
+    def to_dict(self) -> dict[str, Any]:
+        temporal_workflow_id = self.temporal_workflow_id
+
+        temporal_run_id = self.temporal_run_id
+
+        workflow_type = self.workflow_type.value
+
+        workflow_status: Union[Unset, str] = UNSET
+        if not isinstance(self.workflow_status, Unset):
+            workflow_status = self.workflow_status.value
+
+        last_error: Union[None, Unset, str]
+        if isinstance(self.last_error, Unset):
+            last_error = UNSET
+        else:
+            last_error = self.last_error
+
+        tries: Union[None, Unset, int]
+        if isinstance(self.tries, Unset):
+            tries = UNSET
+        else:
+            tries = self.tries
+
+        field_dict: dict[str, Any] = {}
+
+        field_dict.update(
+            {
+                "temporalWorkflowId": temporal_workflow_id,
+                "temporalRunId": temporal_run_id,
+                "workflowType": workflow_type,
+            }
+        )
+        if workflow_status is not UNSET:
+            field_dict["workflowStatus"] = workflow_status
+        if last_error is not UNSET:
+            field_dict["lastError"] = last_error
+        if tries is not UNSET:
+            field_dict["tries"] = tries
+
+        return field_dict
+
+    @classmethod
+    def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        d = dict(src_dict)
+        temporal_workflow_id = d.pop("temporalWorkflowId")
+
+        temporal_run_id = d.pop("temporalRunId")
+
+        workflow_type = TemporalWorkflowType(d.pop("workflowType"))
+
+        _workflow_status = d.pop("workflowStatus", UNSET)
+        workflow_status: Union[Unset, TemporalWorkflowStatus]
+        if isinstance(_workflow_status, Unset):
+            workflow_status = UNSET
+        else:
+            workflow_status = TemporalWorkflowStatus(_workflow_status)
+
+        def _parse_last_error(data: object) -> Union[None, Unset, str]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, str], data)
+
+        last_error = _parse_last_error(d.pop("lastError", UNSET))
+
+        def _parse_tries(data: object) -> Union[None, Unset, int]:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(Union[None, Unset, int], data)
+
+        tries = _parse_tries(d.pop("tries", UNSET))
+
+        create_knowledge_sync_job_request = cls(
+            temporal_workflow_id=temporal_workflow_id,
+            temporal_run_id=temporal_run_id,
+            workflow_type=workflow_type,
+            workflow_status=workflow_status,
+            last_error=last_error,
+            tries=tries,
+        )
+
+        return create_knowledge_sync_job_request

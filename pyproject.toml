@@ -1,0 +1,39 @@
+[project]
+name = "rational-client"
+version = "1.0.0"
+description = "Python client for RationaleAI backend"
+authors = [
+    { name="Francesco Crecchi", email="f.crecchi@geckosoft.it" }
+]
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+    "openai>=1.97.1",
+    "nltk>=3.8.0",
+    "langdetect>=1.0.9",
+    "attrs",
+    "python-dateutil",
+    "httpx",
+]
+
+[build-system]
+requires = ["uv_build>=0.8.4,<0.9.0"]
+build-backend = "uv_build"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "black",
+    "isort",
+]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests"
+]
+
+[tool.ruff]
+extend = "../pyproject.toml"
