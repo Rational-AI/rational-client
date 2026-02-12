@@ -1,6 +1,6 @@
 [project]
 name = "rational-client"
-version = "1.1.0"
+version = "1.1.1"
 description = "Python client for RationaleAI backend"
 authors = [
     { name="Francesco Crecchi", email="f.crecchi@geckosoft.it" }
