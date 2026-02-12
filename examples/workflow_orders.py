@@ -14,6 +14,7 @@ from rational_client.core import (
     Knowledge,
     SyncedResource,
 )
+from rational_client.utils import run
 
 
 def process(document: SyncedResource, options: dict):
@@ -176,20 +177,4 @@ def process(document: SyncedResource, options: dict):
             )
 
 
-if __name__ == "__main__":
-    from json import dump, load
-    from sys import argv, stdin, stdout
-
-    if not len(argv) > 1:
-        # Read from stdin
-        input: dict = load(stdin)
-    else:
-        # Read from file
-        with open(argv[1]) as f:
-            input: dict = load(f)
-
-    synced_resource = input["synced_resource"]
-    options = input.get("options", {})
-    document = SyncedResource(synced_resource["knowledge_id"], synced_resource["id"])
-    result = process(document, options)
-    dump(result, stdout)
+run(process)

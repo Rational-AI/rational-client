@@ -1,20 +1,22 @@
 [project]
 name = "rational-client"
-version = "1.0.0"
+version = "1.1.0"
 description = "Python client for RationaleAI backend"
 authors = [
     { name="Francesco Crecchi", email="f.crecchi@geckosoft.it" }
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 license = "MIT"
 dependencies = [
     "openai>=1.97.1",
     "nltk>=3.8.0",
     "langdetect>=1.0.9",
-    "attrs",
-    "python-dateutil",
-    "httpx",
+
+    # connector dependencies
+    "httpx>=0.23.0,<0.29.0",
+    "attrs>=22.2.0",
+    "python-dateutil>=2.8.0,<3",
 ]
 
 [build-system]
