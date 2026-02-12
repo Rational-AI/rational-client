@@ -4,108 +4,116 @@ from itertools import batched
 from typing import Any, cast
 from uuid import UUID
 
-from httpx import URL
-from openai import OpenAI
 from pydantic import BaseModel
 
-from backend_knowledge_v0_client.api.annotation import (
-    delete_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation_annotation_id,
-    get_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation,
-    get_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation_annotation_id,
-    post_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation,
-    put_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation_annotation_id,
+from rational_client.core.utils import get_openai_client
+from rational_client.deps.backend_knowledge_v0_client.api.annotation import (
+    create_annotation,
+    delete_annotation,
+    get_annotation,
+    list_annotations,
+    update_annotation,
 )
-from backend_knowledge_v0_client.api.knowledge import (
-    get_knowledge_v0_knowledge_id,
-    post_knowledge_v0_knowledge_id_resources_find_similar,
-    post_knowledge_v0_knowledge_id_search_annotation,
+from rational_client.deps.backend_knowledge_v0_client.api.knowledge import (
+    find_similar_annotations,
+    find_similar_resources,
+    get_knowledge,
 )
-from backend_knowledge_v0_client.api.rational_resource import (
-    delete_knowledge_v_0_knowledge_knowledge_id_resource_resource_id,
-    get_knowledge_v_0_knowledge_knowledge_id_resource,
-    get_knowledge_v_0_knowledge_knowledge_id_resource_by_name_resource_name,
-    get_knowledge_v_0_knowledge_knowledge_id_resource_resource_id,
-    patch_knowledge_v_0_knowledge_knowledge_id_resource_resource_id,
-    post_knowledge_v_0_knowledge_knowledge_id_resource,
+from rational_client.deps.backend_knowledge_v0_client.api.rational_resource import (
+    create_resource,
+    delete_resource,
+    get_resource,
+    get_resource_by_name,
+    list_resources,
+    update_resource,
 )
-from backend_knowledge_v0_client.api.rational_resource_relation import (
-    delete_knowledge_v_0_knowledge_knowledge_id_resource_relations_id,
-    get_knowledge_v_0_knowledge_knowledge_id_resource_relations,
-    patch_knowledge_v_0_knowledge_knowledge_id_resource_relations_id,
-    post_knowledge_v_0_knowledge_knowledge_id_resource_relations,
+from rational_client.deps.backend_knowledge_v0_client.api.rational_resource_relation import (
+    create_resource_relation,
+    delete_resource_relation,
+    list_resource_relations,
+    update_resource_relation,
 )
-from backend_knowledge_v0_client.api.synced_resource import (
-    delete_knowledge_v0_synced_resource_id,
-    get_knowledge_v0_synced_resource,
-    get_knowledge_v0_synced_resource_id,
-    get_knowledge_v0_synced_resource_id_download,
-    post_knowledge_v0_synced_resource_upload,
+from rational_client.deps.backend_knowledge_v0_client.api.synced_resource import (
+    delete_synced_resource,
+    get_synced_resource,
+    get_synced_resource_contents,
+    list_synced_resources,
+    update_synced_resource,
+    upload_synced_resource,
 )
-from backend_knowledge_v0_client.models import (
+from rational_client.deps.backend_knowledge_v0_client.models import (
     AnnotationDto,
     AnnotationDtoPage,
     AnnotationType,
+    BboxSelector,
     CreateAnnotationRequest,
     CreateResourceRelationRequest,
     CreateResourceRequest,
-    GetKnowledgeV0KnowledgeKnowledgeIdResourceRelationsSortingItem,
-    GetKnowledgeV0KnowledgeKnowledgeIdResourceSortingItem,
-    GetKnowledgeV0KnowledgeKnowledgeIdResourcesResourceIdAnnotationSortingItem,
-    GetKnowledgeV0SyncedResourceSortingItem,
     KeywordExtractionMethod,
     KnowledgeDto,
+    ListResourceRelationsSortingItem,
+    ListResourcesSortingItem,
+    ListSyncedResourcesSortingItem,
+    RangeSelector,
     RationalResourceDto,
     RationalResourceDtoPage,
     RationalResourceRelationDto,
     RationalResourceRelationDtoPage,
     SearchRequest,
     SearchResultDto,
+    Selector,
     SyncedResourceDto,
     SyncedResourceDtoPage,
     SyncedResourceStatus,
     UpdateAnnotationRequest,
     UpdateResourceRelationRequest,
     UpdateResourceRequest,
+    UpdateSyncedResourceRequest,
     UploadSyncedResourceRequest,
 )
-from backend_knowledge_v0_client.types import UNSET, File, Unset
-from backend_management_v0_client.api.touchpoints import get_touchpoint
-from backend_management_v0_client.models import TouchpointDto
+from rational_client.deps.backend_knowledge_v0_client.models.list_annotations_sorting_item import (
+    ListAnnotationsSortingItem,
+)
+from rational_client.deps.backend_knowledge_v0_client.types import UNSET, File, Unset
+from rational_client.deps.backend_management_v0_client.api.touchpoints import get_touchpoint
+from rational_client.deps.backend_management_v0_client.models import TouchpointDto
 
 from .backend_clients import knowledge_client, management_client
 from .chat_completion import chat_completion
 
-SyncedResourceSorting = GetKnowledgeV0SyncedResourceSortingItem
-RationalResourceSorting = GetKnowledgeV0KnowledgeKnowledgeIdResourceSortingItem
-AnnotationResourceSorting = GetKnowledgeV0KnowledgeKnowledgeIdResourcesResourceIdAnnotationSortingItem
-ResourceRelationSorting = GetKnowledgeV0KnowledgeKnowledgeIdResourceRelationsSortingItem
+SyncedResourceSorting = ListSyncedResourcesSortingItem
+RationalResourceSorting = ListResourcesSortingItem
+AnnotationResourceSorting = ListAnnotationsSortingItem
+ResourceRelationSorting = ListResourceRelationsSortingItem
 
 
 # Knowledge
-get_knowledge = get_knowledge_v0_knowledge_id.sync
-get_synced_resource = get_knowledge_v0_synced_resource_id.sync
-get_synced_resource_data = get_knowledge_v0_synced_resource_id_download.sync_detailed
-upload_synced_resource = post_knowledge_v0_synced_resource_upload
-list_synced_resource_paginated = get_knowledge_v0_synced_resource.sync
-delete_synced_resource = delete_knowledge_v0_synced_resource_id.sync
-create_rational_resource = post_knowledge_v_0_knowledge_knowledge_id_resource.sync
-get_resource = get_knowledge_v_0_knowledge_knowledge_id_resource_resource_id.sync
-get_resource_by_name = get_knowledge_v_0_knowledge_knowledge_id_resource_by_name_resource_name.sync
-update_resource = patch_knowledge_v_0_knowledge_knowledge_id_resource_resource_id.sync
-list_resources_paginated = get_knowledge_v_0_knowledge_knowledge_id_resource.sync
-delete_resource = delete_knowledge_v_0_knowledge_knowledge_id_resource_resource_id.sync
-find_similar_annotations = post_knowledge_v0_knowledge_id_search_annotation.sync_detailed
-find_similar_resources = post_knowledge_v0_knowledge_id_resources_find_similar.sync_detailed
+_get_knowledge = get_knowledge.sync
+_get_synced_resource = get_synced_resource.sync
+_get_synced_resource_data = get_synced_resource_contents.sync_detailed
+_upload_synced_resource = upload_synced_resource.sync
+_update_synced_resource = update_synced_resource.sync
+_list_synced_resource_paginated = list_synced_resources.sync
+_delete_synced_resource = delete_synced_resource.sync
+_create_rational_resource = create_resource.sync
+_get_resource = get_resource.sync
+_get_resource_by_name = get_resource_by_name.sync
+_update_resource = update_resource.sync
+_list_resources_paginated = list_resources.sync
+_delete_resource = delete_resource.sync
+_find_similar_annotations = find_similar_annotations.sync_detailed
+_find_similar_resources = find_similar_resources.sync_detailed
+
 # RationalResource
-list_annotations_paginated = get_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation.sync
-get_annotation = get_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation_annotation_id.sync
-update_annotation = put_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation_annotation_id.sync
-create_annotation = post_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation.sync
-delete_annotation = delete_knowledge_v_0_knowledge_knowledge_id_resources_resource_id_annotation_annotation_id.sync
-create_resource_relation = post_knowledge_v_0_knowledge_knowledge_id_resource_relations.sync
-list_resource_relations_paginated = get_knowledge_v_0_knowledge_knowledge_id_resource_relations.sync
-delete_resource_relation = delete_knowledge_v_0_knowledge_knowledge_id_resource_relations_id.sync
-update_resource_relation = patch_knowledge_v_0_knowledge_knowledge_id_resource_relations_id.sync
+_list_annotations_paginated = list_annotations.sync
+_get_annotation = get_annotation.sync
+_update_annotation = update_annotation.sync
+_create_annotation = create_annotation.sync
+_delete_annotation = delete_annotation.sync
+_create_resource_relation = create_resource_relation.sync
+_list_resource_relations_paginated = list_resource_relations.sync
+_delete_resource_relation = delete_resource_relation.sync
+_update_resource_relation = update_resource_relation.sync
 
 
 class Annotation:
@@ -123,7 +131,7 @@ class Annotation:
 
     def _get_dto(self) -> AnnotationDto:
         if not self.internal_dto:
-            result = get_annotation(
+            result = _get_annotation(
                 client=knowledge_client,
                 knowledge_id=self.knowledge_id,
                 resource_id=self.rational_resource_id,
@@ -137,12 +145,11 @@ class Annotation:
     def save(self):
         dto = self._get_dto()
         request = UpdateAnnotationRequest(
-            annotation_type=dto.annotation_type,
             data=dto.data,
             keywords=dto.keywords,
             generated_resource_id=dto.generated_resource_id,
         )
-        result = update_annotation(
+        result = _update_annotation(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             resource_id=self.rational_resource_id,
@@ -206,7 +213,7 @@ class RationalResourceRelation:
         # Save current type to backend
         dto = self._get_dto()
         request = UpdateResourceRelationRequest(type_=dto.type_)
-        result = update_resource_relation(
+        result = _update_resource_relation(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             id=self.relation_id,
@@ -240,7 +247,7 @@ class RationalResource:
 
     def _get_dto(self):
         if not self.internal_dto:
-            result = get_resource(
+            result = _get_resource(
                 client=knowledge_client,
                 knowledge_id=self.knowledge_id,
                 resource_id=self.resource_id,
@@ -253,7 +260,7 @@ class RationalResource:
     def save(self):
         dto = self._get_dto()
         request = UpdateResourceRequest(name=dto.name, notes=dto.notes, tags=dto.tags)
-        result = update_resource(
+        result = _update_resource(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             resource_id=self.resource_id,
@@ -287,7 +294,7 @@ class RationalResource:
         limit: int | Unset = UNSET,
         sorting: list[AnnotationResourceSorting] | Unset = UNSET,
     ):
-        result = list_annotations_paginated(
+        result = _list_annotations_paginated(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             resource_id=self.resource_id,
@@ -324,11 +331,17 @@ class RationalResource:
     def add_annotation(
         self,
         annotation_type: AnnotationType,
+        selector: Selector | BboxSelector | RangeSelector | None | Unset = UNSET,
+        position: int | Unset = UNSET,
+        title: str | None | Unset = UNSET,
+        content: str | Unset = UNSET,
+        label: str | None | Unset = UNSET,
         data: dict[str, Any] | None = None,
         embedding: list[float] | Unset = UNSET,
         generated_resource_id: UUID | None = None,
         keywords: list[str] | None = None,
         auto_extract_keywords: bool = True,
+        enabled: bool = True,
     ) -> Annotation:
         """
         Add an annotation to this resource.
@@ -344,6 +357,7 @@ class RationalResource:
             auto_extract_keywords: Whether to automatically extract keywords from text content
                                   when keywords are not provided (default: True). This still
                                   respects the Knowledge's AllowKeywordsExtraction setting.
+            enabled: Whether the annotation is enabled (default: True)
 
         Returns:
             The created Annotation object
@@ -379,14 +393,22 @@ class RationalResource:
             else:
                 logging.debug("Keyword extraction is disabled for this knowledge, skipping auto-extraction")
 
+        selector_param: Selector | Unset = selector or UNSET  # type: ignore
+
         request = CreateAnnotationRequest(
             annotation_type=annotation_type,
+            selector=selector_param,
+            position=position,
+            title=title,
+            content=content,
+            enabled=enabled,
             data=data,
+            label=label,
             embedding=embedding,
             keywords=keywords,
             generated_resource_id=generated_resource_id,
         )
-        result = create_annotation(
+        result = _create_annotation(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             resource_id=self.resource_id,
@@ -402,7 +424,7 @@ class RationalResource:
         )
 
     def delete_annotation(self, id: UUID):
-        result = delete_annotation(
+        result = _delete_annotation(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             resource_id=self.resource_id,
@@ -430,7 +452,7 @@ class RationalResource:
             to_resource_id=related_resource.resource_id,
             type_=type,
         )
-        result = create_resource_relation(client=knowledge_client, knowledge_id=self.knowledge_id, body=request)
+        result = _create_resource_relation(client=knowledge_client, knowledge_id=self.knowledge_id, body=request)
         if not isinstance(result, RationalResourceRelationDto):
             raise TypeError(result)  # TODO: Enhance error handling!
         return RationalResourceRelation(
@@ -447,7 +469,7 @@ class RationalResource:
         limit: int | Unset = UNSET,
         sorting: list[ResourceRelationSorting] | Unset = UNSET,
     ):
-        result = list_resource_relations_paginated(
+        result = _list_resource_relations_paginated(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             from_id=self.resource_id,
@@ -483,7 +505,7 @@ class RationalResource:
                 return
 
     def delete_relation(self, id: UUID):
-        result = delete_resource_relation(client=knowledge_client, knowledge_id=self.knowledge_id, id=id)
+        result = _delete_resource_relation(client=knowledge_client, knowledge_id=self.knowledge_id, id=id)
         if result is not None:
             raise TypeError(result)
 
@@ -501,7 +523,7 @@ class SyncedResource:
 
     def _get_dto(self):
         if not self.internal_dto:
-            result = get_synced_resource(
+            result = _get_synced_resource(
                 client=knowledge_client,
                 id=self.id,
             )
@@ -518,7 +540,7 @@ class SyncedResource:
         raise AttributeError(f"{type(self).__name__!r} object has no attribute {name!r}")
 
     def get_data(self):
-        result = get_synced_resource_data(
+        result = _get_synced_resource_data(
             client=knowledge_client,
             id=self.id,
         )
@@ -528,15 +550,13 @@ class SyncedResource:
 
 
 class Knowledge:
-    client: OpenAI | None = None
-
     def __init__(self, knowledge_id: UUID, internal_dto: KnowledgeDto | None = None):
         self.knowledge_id = knowledge_id
         self.internal_dto = internal_dto
 
     def _get_dto(self):
         if not self.internal_dto:
-            result = get_knowledge(client=knowledge_client, id=self.knowledge_id)
+            result = _get_knowledge(client=knowledge_client, id=self.knowledge_id)
             if not isinstance(result, KnowledgeDto):
                 raise TypeError(result)  # TODO: Enhance error handling!
             self.internal_dto = result
@@ -565,7 +585,6 @@ class Knowledge:
     def __setattr__(self, name, value):
         if name in {
             "knowledge_id",
-            "client",
             "internal_dto",
         }:
             super().__setattr__(name, value)
@@ -575,13 +594,6 @@ class Knowledge:
                 setattr(dto, name, value)
             else:
                 super().__setattr__(name, value)
-
-    def _get_client(self):
-        self.client = self.client or OpenAI(
-            base_url=URL(knowledge_client._base_url).join("./compat/v0/openai"),
-            api_key=knowledge_client.token,
-        )
-        return self.client
 
     def create_resource(
         self,
@@ -598,7 +610,7 @@ class Knowledge:
             synced_resource_id=synced_resource_id,
             tags=tags,
         )
-        result = create_rational_resource(
+        result = _create_rational_resource(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             body=request,
@@ -619,7 +631,7 @@ class Knowledge:
         status: SyncedResourceStatus | Unset = UNSET,
         sorting: list[SyncedResourceSorting] | Unset = UNSET,
     ):
-        result = list_synced_resource_paginated(
+        result = _list_synced_resource_paginated(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             status=status,
@@ -654,11 +666,38 @@ class Knowledge:
                 return
 
     def delete_synced_resource(self, id: UUID):
-        result = delete_synced_resource(client=knowledge_client, id=id)
+        result = _delete_synced_resource(client=knowledge_client, id=id)
         if result is None:
             return result
         else:
             raise TypeError(result)
+
+    def update_synced_resource(
+        self,
+        id: UUID,
+        name: str | Unset = UNSET,
+        status: SyncedResourceStatus | Unset = UNSET,
+        processing_workflow_id: UUID | None | Unset = UNSET,
+        processing_workflow_options: Any | Unset = UNSET,
+    ):
+        request = UpdateSyncedResourceRequest(
+            name=name,
+            status=status,
+            processing_workflow_id=processing_workflow_id,
+            processing_workflow_options=processing_workflow_options,
+        )
+        result = _update_synced_resource(
+            client=knowledge_client,
+            id=id,
+            body=request,
+        )
+        if not isinstance(result, SyncedResourceDto):
+            raise TypeError(result)  # TODO: Enhance error handling!
+        return SyncedResource(
+            knowledge_id=result.knowledge_id,
+            id=result.id,
+            internal_dto=result,
+        )
 
     def upload_synced_resource(
         self,
@@ -666,27 +705,15 @@ class Knowledge:
         contents: File,
         parent_id: UUID | Unset = UNSET,
     ):
-        # FIXME: this is a workaround for the broken OpenAPI connector
-        request = UploadSyncedResourceRequest(
-            name=name,
-            data=contents,
-            knowledge_id=self.knowledge_id,
-            parent_id=parent_id,
+        result = _upload_synced_resource(
+            client=knowledge_client,
+            body=UploadSyncedResourceRequest(
+                name=name,
+                data=contents,
+                knowledge_id=self.knowledge_id,
+                parent_id=parent_id,
+            ),
         )
-        data = request.to_dict()
-        files = {"data": data.pop("data")}
-
-        kwargs = upload_synced_resource._get_kwargs(
-            body=cast(Any, None),
-        )
-
-        response = knowledge_client.get_httpx_client().request(
-            method=kwargs["method"],
-            url=kwargs["url"],
-            data=data,
-            files=files,
-        )
-        result = upload_synced_resource._build_response(client=knowledge_client, response=response).parsed
         if not isinstance(result, SyncedResourceDto):
             raise TypeError(result)  # TODO: Enhance error handling!
         return SyncedResource(
@@ -701,14 +728,16 @@ class Knowledge:
         offset: int | Unset = UNSET,
         limit: int | Unset = UNSET,
         sorting: list[RationalResourceSorting] | Unset = UNSET,
+        tags: list[str] | Unset = UNSET,
     ):
-        result = list_resources_paginated(
+        result = _list_resources_paginated(
             client=knowledge_client,
             knowledge_id=self.knowledge_id,
             synced_resource_id=synced_resource_id,
             offset=offset,
             limit=limit,
             sorting=sorting,
+            tags=tags,
         )
         if isinstance(result, RationalResourceDtoPage):
             return result
@@ -718,6 +747,7 @@ class Knowledge:
     def get_resources(
         self,
         synced_resource_id: UUID | Unset = UNSET,
+        tags: list[str] | Unset = UNSET,
     ):
         offset = 0
         while True:
@@ -728,6 +758,7 @@ class Knowledge:
                 offset=offset,
                 limit=100,
                 sorting=[RationalResourceSorting.CREATEDAT],
+                tags=tags,
             )
             for resource in page.items:
                 yield RationalResource(
@@ -740,7 +771,7 @@ class Knowledge:
                 return
 
     def get_resource(self, id: UUID):
-        result = get_resource(client=knowledge_client, knowledge_id=self.knowledge_id, resource_id=id)
+        result = _get_resource(client=knowledge_client, knowledge_id=self.knowledge_id, resource_id=id)
         if not isinstance(result, RationalResourceDto):
             raise TypeError(result)  # TODO: Enhance error handling!
         return RationalResource(
@@ -750,7 +781,7 @@ class Knowledge:
         )
 
     def get_resource_by_name(self, name: str):
-        result = get_resource_by_name(client=knowledge_client, knowledge_id=self.knowledge_id, resource_name=name)
+        result = _get_resource_by_name(client=knowledge_client, knowledge_id=self.knowledge_id, resource_name=name)
         if not isinstance(result, RationalResourceDto):
             raise TypeError(result)  # TODO: Enhance error handling!
         return RationalResource(
@@ -760,7 +791,7 @@ class Knowledge:
         )
 
     def delete_resource(self, id: UUID):
-        result = delete_resource(client=knowledge_client, knowledge_id=self.knowledge_id, resource_id=id)
+        result = _delete_resource(client=knowledge_client, knowledge_id=self.knowledge_id, resource_id=id)
         if result is None:
             return result
         else:
@@ -774,7 +805,7 @@ class Knowledge:
             query_vector=query_vector,
             top_k=top_k,
         )
-        result = find_similar_annotations(
+        result = _find_similar_annotations(
             client=knowledge_client,
             id=self.knowledge_id,
             body=request,
@@ -792,7 +823,7 @@ class Knowledge:
             query_vector=query_vector,
             top_k=top_k,
         )
-        result = find_similar_resources(client=knowledge_client, id=self.knowledge_id, body=request)
+        result = _find_similar_resources(client=knowledge_client, id=self.knowledge_id, body=request)
         if result.status_code.is_success:
             return cast(list[SearchResultDto], result.parsed)
         else:
@@ -811,7 +842,7 @@ class Knowledge:
         if not self.embedding_model:
             raise ValueError("No embedding model set on the knowledge")
 
-        embeddings = self._get_client().embeddings
+        embeddings = get_openai_client().embeddings
 
         result = []
         # use a batch size compatible with TEI defaults
@@ -830,7 +861,7 @@ class Knowledge:
         if not self.embedding_model:
             raise ValueError("No embedding model set on the knowledge")
 
-        response = self._get_client().embeddings.create(model=self.embedding_model.model_identifier, input=[text])
+        response = get_openai_client().embeddings.create(model=self.embedding_model.model_identifier, input=[text])
         if not response or not response.usage:
             raise ValueError("Failed to get token count from OpenAI API.")
 
@@ -959,7 +990,6 @@ Text to analyze:
 
             # Use the chat_completion function with structured output
             raw_content = chat_completion(
-                client=self._get_client(),
                 model_name=model_name,
                 prompt=prompt,
                 max_tokens=300,

@@ -1,7 +1,5 @@
 {
-    "synced_resource": {
-        "knowledge_id": "your_knowledge_id",
-        "id": "your_resource_id"
-    },
+    "knowledge_id": "your_knowledge_id",
+    "path": "path/to/your/file.pdf",
     "options": {}
 }

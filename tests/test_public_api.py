@@ -5,9 +5,13 @@ if True:
     # we run this before other imports because of its side-effects
     from .utils import create_knowledge, delete_knowledge
 
-from backend_knowledge_v0_client.models import RationalResourceDto, SearchResultDto, SyncedResourceDtoPage
-from backend_knowledge_v0_client.types import File
-from rational_client.core import AnnotationType, RationalResource
+from rational_client.core import AnnotationType, BboxSelector, RationalResource
+from rational_client.deps.backend_knowledge_v0_client.models import (
+    RationalResourceDto,
+    SearchResultDto,
+    SyncedResourceDtoPage,
+)
+from rational_client.deps.backend_knowledge_v0_client.types import File
 
 random.seed(42)  # For reproducibility
 
@@ -27,16 +31,21 @@ class TestKnowledgeResourceIntegration(unittest.TestCase):
         self.annotations = [
             self.resource.add_annotation(
                 annotation_type=AnnotationType.CHUNK,
+                position=1,
+                content="Lorem ipsum",
                 data={"content": "Lorem ipsum"},
                 embedding=[0.1] * 256,
             ),
             self.resource.add_annotation(
                 annotation_type=AnnotationType.CHUNK,
+                position=2,
+                content="Dolor sit amet",
                 data={"content": "Dolor sit amet"},
                 embedding=[0.2] * 256,
             ),
             self.resource.add_annotation(
                 annotation_type=AnnotationType.IMAGE,
+                selector=BboxSelector(kind="bbox", xmax=10, xmin=20, ymax=100, ymin=200),
                 data={"page": 3},
             ),
         ]
@@ -106,19 +115,26 @@ class TestKnowledgeSimilaritySearchIntegration(unittest.TestCase):
         self.query_vector = [random.uniform(-1, 1) for _ in range(256)]
         for i in range(3):
             resource = self.knowledge.create_resource(name=f"Resource {i}")
+            position = 0
             for j in range(3):  # Add multiple annotations per resource
+                position += 1
                 # Add one annotation with an embedding that matches the query vector
                 resource.add_annotation(
                     annotation_type=AnnotationType.CHUNK,
+                    position=position,
+                    content=f"Matching Annotation {j + 1} for Resource {i + 1}",
                     data={
                         "content": f"Matching Annotation {j + 1} for Resource {i + 1}",
                     },
                     embedding=self.query_vector,
                 )
+                position += 1
                 # Add another annotation with a random embedding
                 random_embedding = [random.uniform(-1, 1) for _ in range(256)]
                 resource.add_annotation(
                     annotation_type=AnnotationType.CHUNK,
+                    position=position,
+                    content=f"Random Annotation {j + 1} for Resource {i + 1}",
                     data={
                         "content": f"Random Annotation {j + 1} for Resource {i + 1}",
                     },
@@ -218,6 +234,7 @@ class TestResourceAnnotationIntegration(unittest.TestCase):
         # Add a second annotation to ensure multiple are deleted
         self.resource.add_annotation(
             annotation_type=AnnotationType.COMMENT,
+            content="Another annotation",
             data={
                 "content": "Another annotation",
             },
@@ -355,6 +372,50 @@ class TestSyncedResourceIntegration(unittest.TestCase):
         resources = list(self.knowledge.get_synced_resources())
         resource_ids = [r.id for r in resources]
         self.assertNotIn(self.synced_resource.id, resource_ids)
+
+    def test_update_synced_resource_name(self):
+        # Upload a synced resource to update
+        import io
+
+        contents = b"Initial content for update test."
+        synced_resource = self.knowledge.upload_synced_resource(
+            name="OriginalName",
+            contents=File(io.BytesIO(contents), file_name="OriginalName", mime_type="text/plain"),
+        )
+        # Update the name
+        updated_name = "UpdatedName"
+        updated_resource = self.knowledge.update_synced_resource(
+            id=synced_resource.id,
+            name=updated_name,
+        )
+        self.assertIsNotNone(updated_resource)
+        self.assertEqual(updated_resource.id, synced_resource.id)
+        self.assertEqual(updated_resource.name, updated_name)
+
+    def test_update_synced_resource_status(self):
+        import io
+
+        contents = b"Content for status update test."
+        synced_resource = self.knowledge.upload_synced_resource(
+            name="StatusTest",
+            contents=File(io.BytesIO(contents), file_name="StatusTest", mime_type="text/plain"),
+        )
+        from rational_client.deps.backend_knowledge_v0_client.models import SyncedResourceStatus
+
+        updated_resource = self.knowledge.update_synced_resource(
+            id=synced_resource.id,
+            status=SyncedResourceStatus.PROCESSED,
+        )
+        self.assertIsNotNone(updated_resource)
+        self.assertEqual(updated_resource.id, synced_resource.id)
+        self.assertEqual(updated_resource.status, SyncedResourceStatus.PROCESSED)
+
+    def test_update_synced_resource_invalid_id_raises(self):
+        from uuid import uuid4
+
+        invalid_id = uuid4()
+        with self.assertRaises(TypeError):
+            self.knowledge.update_synced_resource(id=invalid_id, name="ShouldFail")
 
 
 if __name__ == "__main__":

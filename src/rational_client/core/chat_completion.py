@@ -1,8 +1,7 @@
-from openai import OpenAI
+from rational_client.core.utils import get_openai_client
 
 
 def chat_completion(
-    client: OpenAI,
     model_name: str,
     prompt: str,
     max_tokens: int | None = None,
@@ -25,6 +24,7 @@ def chat_completion(
     if response_format:
         request_params["response_format"] = response_format
 
+    client = get_openai_client()
     response = client.chat.completions.create(**request_params)
 
     content = response.choices[0].message.content

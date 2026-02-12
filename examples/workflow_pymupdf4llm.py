@@ -6,7 +6,6 @@
 #     "rational-client",
 # ]
 # ///
-
 import os
 from io import BytesIO
 
@@ -14,10 +13,12 @@ import fitz  # PyMuPDF
 
 from rational_client.core import (
     AnnotationType,
+    BboxSelector,
     File,
     Knowledge,
     SyncedResource,
 )
+from rational_client.utils import run
 
 
 def serialize_bbox(page_height, bbox):
@@ -79,6 +80,17 @@ def process(document: SyncedResource, options: dict):
             bbox_dict = serialize_bbox(page_height, bbox)
             resource.add_annotation(
                 annotation_type=AnnotationType.IMAGE,
+                selector=BboxSelector(
+                    kind="bbox",
+                    page=page_no,
+                    xmin=bbox_dict["left"],
+                    ymin=bbox_dict["top"],
+                    xmax=bbox_dict["right"],
+                    ymax=bbox_dict["bottom"],
+                )
+                if bbox
+                else None,
+                content=f"Picture extracted to {pic_synced_resource.id}",
                 data={
                     "page": page_no,
                     "bbox": bbox_dict,
@@ -95,20 +107,4 @@ def process(document: SyncedResource, options: dict):
     return {str(resource.resource_id): markdown}
 
 
-if __name__ == "__main__":
-    from json import dump, load
-    from sys import argv, stdin, stdout
-
-    if not len(argv) > 1:
-        # Read from stdin
-        input: dict = load(stdin)
-    else:
-        # Read from file
-        with open(argv[1]) as f:
-            input: dict = load(f)
-
-    synced_resource = input["synced_resource"]
-    options = input.get("options", {})
-    document = SyncedResource(synced_resource["knowledge_id"], synced_resource["id"])
-    result = process(document, options)
-    dump(result, stdout)
+run(process)

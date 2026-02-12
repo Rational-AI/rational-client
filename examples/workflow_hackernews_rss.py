@@ -20,6 +20,7 @@ from rational_client.core import (
     Knowledge,
     SyncedResource,
 )
+from rational_client.utils import run
 
 
 def _sanitize_filename(name: str, max_len: int = 80, ext: str = ".html") -> str:
@@ -115,20 +116,4 @@ def process(document: SyncedResource, options: dict):
         )
 
 
-if __name__ == "__main__":
-    from json import dump, load
-    from sys import argv, stdin, stdout
-
-    if not len(argv) > 1:
-        # Read input JSON from stdin
-        input: dict = load(stdin)
-    else:
-        # Or from file path
-        with open(argv[1]) as f:
-            input: dict = load(f)
-
-    synced_resource = input["synced_resource"]
-    options = input.get("options", {})
-    document = SyncedResource(synced_resource["knowledge_id"], synced_resource["id"])
-    result = process(document, options)
-    dump(result, stdout)
+run(process)

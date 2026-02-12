@@ -9,7 +9,8 @@ import json
 import sqlite3
 import tempfile
 
-from rational_client.core import File, Knowledge, SyncedResource
+from rational_client.core import Knowledge, SyncedResource
+from rational_client.utils import run
 
 
 def generate_product_markdown(product: dict) -> str:
@@ -220,9 +221,6 @@ def process(document: SyncedResource, options: dict):
 
             knowledge = Knowledge(document.knowledge_id)
 
-            # Track all product resources for creating relations later
-            product_resources_with_metadata = []
-
             for product in products:
                 # Create rational resource for product
                 tags = []
@@ -230,6 +228,12 @@ def process(document: SyncedResource, options: dict):
                     tags.append(product["collection"])
                 if product.get("vendor"):
                     tags.append(product["vendor"])
+
+                # Extract materials from description and components, add as tags
+                materials = extract_materials(product.get("description", ""), product.get("components"))
+                for material in materials:
+                    tags.append(material)
+
                 product_resource = knowledge.create_resource(
                     name=product.get("title", "Untitled Product"),
                     category=product.get("collection", "Uncategorized"),
@@ -243,18 +247,6 @@ def process(document: SyncedResource, options: dict):
                 # Generate and store markdown summary for the product
                 product_markdown = generate_product_markdown(product)
                 markdown_summaries[str(resource_id)] = product_markdown
-
-                # Extract materials from description and components, and track metadata
-                materials = extract_materials(product.get("description", ""), product.get("components"))
-                category = product.get("collection", "Uncategorized")
-
-                product_resources_with_metadata.append(
-                    {
-                        "resource": product_resource,
-                        "materials": materials,
-                        "category": category,
-                    }
-                )
 
                 # Insert product into DB
                 cur.execute(
@@ -337,46 +329,10 @@ def process(document: SyncedResource, options: dict):
                 for variant_resource in variant_resources:
                     product_resource.add_relation(variant_resource, type="variant")
 
-            # Create relations between products based on shared attributes
-            for i, item1 in enumerate(product_resources_with_metadata):
-                for item2 in product_resources_with_metadata[i + 1 :]:
-                    # Same category relation
-                    if item1["category"] == item2["category"]:
-                        item1["resource"].add_relation(item2["resource"], type="same_category")
-
-                    # Same material relation - create one relation if they share any materials
-                    shared_materials = item1["materials"] & item2["materials"]
-                    if shared_materials:
-                        item1["resource"].add_relation(item2["resource"], type="same_material")
-
             conn.commit()
-
-        # Create a RationalResource for the SQLite database
-        with open(db_path, "rb") as f:
-            _ = knowledge.upload_synced_resource(
-                name="products.db",
-                contents=File(f, file_name="products.db", mime_type="application/x-sqlite3"),
-                parent_id=document.id,
-            )
 
     # Return markdown summaries for chunking and embedding
     return markdown_summaries
 
 
-if __name__ == "__main__":
-    from json import dump, load
-    from sys import argv, stdin, stdout
-
-    if not len(argv) > 1:
-        # Read from stdin
-        input: dict = load(stdin)
-    else:
-        # Read from file
-        with open(argv[1]) as f:
-            input: dict = load(f)
-
-    synced_resource = input["synced_resource"]
-    options = input.get("options", {})
-    document = SyncedResource(synced_resource["knowledge_id"], synced_resource["id"])
-    result = process(document, options)
-    dump(result, stdout)
+run(process)
